@@ -6,14 +6,14 @@ import java.util.concurrent.TimeUnit;
 
 public class NetWorkService {
 	
-	 private static NetWorkService service;
-	 private final ExecutorService pool;
-	 private final static int DEFAULT_SIZE=5;
+     private static NetWorkService service;
+     private final ExecutorService pool;
+     private final static int DEFAULT_SIZE=5;
 	 
-	 public NetWorkService()
-	 {
-		 this(DEFAULT_SIZE);
-	 }
+     public NetWorkService()
+     {
+	 this(DEFAULT_SIZE);
+     }
      public NetWorkService(int poolSize)
      {
     	 pool=Executors.newFixedThreadPool(poolSize);    	 
