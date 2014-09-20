@@ -10,7 +10,7 @@ public class NmcpHead implements Serializable{
 	
 	
 	
-	private static final byte DEFAULT_VERSION =1;
+	public static final byte DEFAULT_VERSION =1;
 	
 	public static final byte NMCP_SUBP_STUN =1;
 	public static final byte NMCP_SUBP_CONNECT	=2;
@@ -69,11 +69,31 @@ public class NmcpHead implements Serializable{
     
     public byte[] getBytes()
     {
-    	byte b[]=new byte[8];
-    	b[0]= ByteConvert.combine2Bytes(version, subpID);
-    	b[1]=descrip;
-    	ByteConvert.shortToBytes(b,length, 2);
+    	byte b[] = new byte[8];
+    	b[0] = ByteConvert.combine2Bytes(version, subpID);
+    	b[1] = descrip;
+    	ByteConvert.shortToBytes(b, length, 2);
     	ByteConvert.intToBytes(b, transactionID, 4);
     	return b;
+    }
+
+    public void setSubpID(byte subpID) {
+        this.subpID = subpID;
+    }
+
+    public void setDescrip(byte descrip) {
+        this.descrip = descrip;
+    }
+
+    public void setLength(short length) {
+        this.length = length;
+    }
+
+    public void setTransactionID(int transactionID) {
+        this.transactionID = transactionID;
+    }
+
+    public void setVersion(byte version) {
+        this.version = version;
     }
 }

@@ -5,34 +5,29 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class NetWorkService {
-	
-     private static NetWorkService service;
+
      private final ExecutorService pool;
-     private final static int DEFAULT_SIZE=5;
-	 
-     public NetWorkService()
+     private final static int DEFAULT_SIZE = 5;
+     private static NetWorkService service = new NetWorkService(DEFAULT_SIZE);
+     private NetWorkService()
      {
-	 this(DEFAULT_SIZE);
+         this(DEFAULT_SIZE);
      }
-     public NetWorkService(int poolSize)
+     private NetWorkService(int poolSize)
      {
-    	 pool=Executors.newFixedThreadPool(poolSize);    	 
+    	 pool = Executors.newFixedThreadPool(poolSize);
      }
      
-     public static NetWorkService getInstance(int poolSize)
+     public static NetWorkService getInstance()
      {
-    	 if(service==null)
-    	 {
-    		 service=new NetWorkService(poolSize);
-    	 }
     	 return service;
      }
      
      public static NetWorkService getDefaultInstance(int poolSize)
      {
-    	 if(service==null)
+    	 if(service == null)
     	 {
-    		 service=NetWorkService.getDefaultInstance(poolSize);
+    		 service = NetWorkService.getDefaultInstance(poolSize);
     	 }
     	 return service;
      }
@@ -42,8 +37,8 @@ public class NetWorkService {
     	 pool.shutdown(); // Disable new tasks from being submitted
     	   try {
     	     // Wait a while for existing tasks to terminate
-    	     if (!pool.awaitTermination(60, TimeUnit.SECONDS)) 
-    	        pool.shutdownNow(); // Cancel currently executing tasks
+    	       if (!pool.awaitTermination(60, TimeUnit.SECONDS)) 
+    	           pool.shutdownNow(); // Cancel currently executing tasks
     	       // Wait a while for tasks to respond to being cancelled
     	       if (!pool.awaitTermination(60, TimeUnit.SECONDS))
     	           System.err.println("Pool did not terminate");

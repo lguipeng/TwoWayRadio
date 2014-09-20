@@ -4,6 +4,8 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.view.KeyEvent;
 
+import com.szu.twowayradio.App;
+
 
 public class BaseActivity extends FragmentActivity{
 
@@ -13,17 +15,8 @@ public class BaseActivity extends FragmentActivity{
 		super.onCreate(bundle);
 	}
 
-	@Override
-	protected void onDestroy() {
-		
-		super.onDestroy();
-	}
-
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		
-		return super.onKeyDown(keyCode, event);
-	}
-
-	
+    protected App getAppContext()
+    {
+        return (App)getApplication();
+    }
 }
