@@ -8,26 +8,29 @@ public class NetWorkService {
 
      private final ExecutorService pool;
      private final static int DEFAULT_SIZE = 5;
-     private static NetWorkService service = new NetWorkService(DEFAULT_SIZE);
+     private static NetWorkService DefaultService = new NetWorkService(DEFAULT_SIZE);
+     private static NetWorkService service = null;
+
      private NetWorkService()
      {
          this(DEFAULT_SIZE);
      }
+
      private NetWorkService(int poolSize)
      {
     	 pool = Executors.newFixedThreadPool(poolSize);
      }
      
-     public static NetWorkService getInstance()
+     public static NetWorkService getDefaultInstance()
      {
-    	 return service;
+    	 return DefaultService;
      }
      
-     public static NetWorkService getDefaultInstance(int poolSize)
+     public static NetWorkService getInstance(int poolSize)
      {
     	 if(service == null)
     	 {
-    		 service = NetWorkService.getDefaultInstance(poolSize);
+    		 service = new NetWorkService(poolSize);
     	 }
     	 return service;
      }

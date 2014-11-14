@@ -7,15 +7,18 @@ import android.media.AudioTrack;
 
 public class AudioTrackHelper {
 	private AudioTrack track;
-	private PlayListener playListener=null;
-	
-	private int bufSize=0;
+
+	private PlayListener playListener = null;
+
+	private int bufSize = 0;
+
 	private boolean isPlay;
-	
-	public void setPlayListener(PlayListener playListener) {
-		this.playListener = playListener;
-	}
-    public void init()
+
+    public AudioTrackHelper() {
+        init();
+    }
+
+    private void init()
     {
     	bufSize=AudioTrack.getMinBufferSize(8000,AudioFormat.CHANNEL_OUT_MONO,
                 AudioFormat.ENCODING_PCM_16BIT);
@@ -25,31 +28,36 @@ public class AudioTrackHelper {
                 bufSize,
                 AudioTrack.MODE_STREAM);
     }
+
     public void startPlay()   
     {
     	if(track!=null)
     	{
-    		isPlay=true;
+    		isPlay = true;
     		track.play();
-    		if(playListener!=null)
+    		if(playListener != null)
     		  playListener.playing(track);
     	}
     }
     public void stopPlay()
     {
-    	if(track!=null)
+    	if(track != null)
     	{
-    		if(isPlay==true)
+    		if(isPlay == true)
     		{
     			track.stop();
     			track.release();
-    			track=null;
-    			isPlay=false;
+    			track = null;
+    			isPlay = false;
     		}
     	}
     }
 
-    public static interface PlayListener {
+    public void setPlayListener(PlayListener playListener) {
+        this.playListener = playListener;
+    }
+
+    public interface PlayListener {
         void playing(AudioTrack track);
     }
 }
