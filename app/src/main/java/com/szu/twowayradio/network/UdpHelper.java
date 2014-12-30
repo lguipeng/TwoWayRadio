@@ -1,14 +1,13 @@
 package com.szu.twowayradio.network;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-
-import android.util.Log;
 
 public class UdpHelper {
 	
@@ -102,6 +101,7 @@ public class UdpHelper {
         }
         return null;
     }
+
     public void close()
     {
     	if(null != socket)

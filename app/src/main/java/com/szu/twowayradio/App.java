@@ -39,6 +39,4 @@ public class App extends Application{
                 PreferenceUtils.getInstance(getApplicationContext()).getStringParam(PreferenceUtils.PASSWORD_KEY));
 
     }
-
-
 }
