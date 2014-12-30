@@ -1,4 +1,4 @@
-package com.szu.twowayradio.fragment;
+package com.szu.twowayradio.ui.fragments;
 
 import android.app.DialogFragment;
 import android.media.AudioRecord;
@@ -15,13 +15,14 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.szu.twowayradio.R;
-import com.szu.twowayradio.domain.User;
+import com.szu.twowayradio.domains.User;
 import com.szu.twowayradio.network.NetWorkService;
 import com.szu.twowayradio.service.ConnectService;
+import com.szu.twowayradio.ui.base.BaseFragment;
 import com.szu.twowayradio.utils.PreferenceUtils;
 import com.szu.twowayradio.utils.RecordHelper;
 import com.szu.twowayradio.utils.ToastUtils;
-import com.szu.twowayradio.view.SpeakButton;
+import com.szu.twowayradio.views.SpeakButton;
 
 
 /**

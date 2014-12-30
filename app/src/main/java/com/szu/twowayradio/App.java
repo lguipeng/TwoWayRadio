@@ -2,10 +2,8 @@ package com.szu.twowayradio;
 
 import android.app.Application;
 
-import com.szu.twowayradio.domain.User;
+import com.szu.twowayradio.domains.User;
 import com.szu.twowayradio.network.NetWorkConfig;
-import com.szu.twowayradio.network.NetWorkService;
-import com.szu.twowayradio.service.ConnectService;
 import com.szu.twowayradio.utils.PreferenceUtils;
 
 public class App extends Application{

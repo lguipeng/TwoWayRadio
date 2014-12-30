@@ -1,4 +1,4 @@
-package com.szu.twowayradio.domain;
+package com.szu.twowayradio.domains;
 
 public class AdpcmState {
 

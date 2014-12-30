@@ -1,14 +1,11 @@
 package com.szu.twowayradio.service;
 
-import com.szu.twowayradio.domain.NmcpHead;
-import com.szu.twowayradio.domain.User;
-import com.szu.twowayradio.network.NetWorkService;
+import com.szu.twowayradio.domains.NmcpHead;
+import com.szu.twowayradio.domains.User;
 import com.szu.twowayradio.network.UdpHelper;
 import com.szu.twowayradio.utils.ByteConvert;
 import com.szu.twowayradio.utils.Logger;
 import com.szu.twowayradio.utils.Md5Convert;
-
-import java.net.DatagramPacket;
 
 /**
  * Created by lgp on 2014/9/2.

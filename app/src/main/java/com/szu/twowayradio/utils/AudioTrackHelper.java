@@ -20,30 +20,28 @@ public class AudioTrackHelper {
 
     private void init()
     {
-    	bufSize=AudioTrack.getMinBufferSize(8000,AudioFormat.CHANNEL_OUT_MONO,
+    	bufSize = AudioTrack.getMinBufferSize(8000,AudioFormat.CHANNEL_OUT_MONO,
                 AudioFormat.ENCODING_PCM_16BIT);
-        track=new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                bufSize,
-                AudioTrack.MODE_STREAM);
+        track = new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
+                AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                bufSize, AudioTrack.MODE_STREAM);
     }
 
     public void startPlay()   
     {
-    	if(track!=null)
+    	if (track != null)
     	{
     		isPlay = true;
     		track.play();
-    		if(playListener != null)
+    		if (playListener != null)
     		  playListener.playing(track);
     	}
     }
     public void stopPlay()
     {
-    	if(track != null)
+    	if (track != null)
     	{
-    		if(isPlay == true)
+    		if (isPlay)
     		{
     			track.stop();
     			track.release();

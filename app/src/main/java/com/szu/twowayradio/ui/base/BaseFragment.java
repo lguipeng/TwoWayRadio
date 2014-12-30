@@ -1,17 +1,11 @@
-package com.szu.twowayradio.fragment;
+package com.szu.twowayradio.ui.base;
 
 import android.app.ActionBar;
 import android.app.Activity;
-import android.net.Uri;
 import android.os.Bundle;
 import android.app.Fragment;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
 
 import com.szu.twowayradio.App;
-import com.szu.twowayradio.R;
 
 public class BaseFragment extends Fragment {
 

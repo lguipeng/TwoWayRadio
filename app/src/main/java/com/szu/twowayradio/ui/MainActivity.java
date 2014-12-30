@@ -3,13 +3,14 @@ package com.szu.twowayradio.ui;
 import android.os.Bundle;
 
 import com.szu.twowayradio.R;
-import com.szu.twowayradio.fragment.BaseFragment;
-import com.szu.twowayradio.fragment.MainFragment;
+import com.szu.twowayradio.ui.base.BaseFragment;
+import com.szu.twowayradio.ui.fragments.MainFragment;
+import com.szu.twowayradio.ui.base.BaseActivity;
 
 /**
  * Created by lgp on 2014/10/28.
  */
-public class MainActivity  extends BaseActivity{
+public class MainActivity  extends BaseActivity {
     MainFragment mainFragment = null;
     @Override
     protected void onCreate(Bundle bundle) {

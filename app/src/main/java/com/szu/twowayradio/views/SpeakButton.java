@@ -1,4 +1,4 @@
-package com.szu.twowayradio.view;
+package com.szu.twowayradio.views;
 
 import android.content.Context;
 import android.util.AttributeSet;

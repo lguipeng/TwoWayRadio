@@ -10,7 +10,7 @@ public class RecordHelper {
 
     private AudioRecord audioRecord;
     private RecordListener recordListener = null;
-	private int audioSource = MediaRecorder.AudioSource.MIC;
+    private int audioSource = MediaRecorder.AudioSource.MIC;
     private static int sampleRateInHz = 8000;
 	private static int channelConfig = AudioFormat.CHANNEL_IN_MONO;
     private static int audioFormat = AudioFormat.ENCODING_PCM_16BIT;

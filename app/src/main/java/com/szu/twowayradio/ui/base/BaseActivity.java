@@ -1,14 +1,12 @@
-package com.szu.twowayradio.ui;
+package com.szu.twowayradio.ui.base;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.view.KeyEvent;
 
 import com.szu.twowayradio.App;
 import com.szu.twowayradio.R;
-import com.szu.twowayradio.fragment.BaseFragment;
 
 
 public abstract  class BaseActivity extends FragmentActivity{

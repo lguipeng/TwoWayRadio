@@ -1,6 +1,5 @@
-package com.szu.twowayradio.fragment;
+package com.szu.twowayradio.ui.fragments;
 
-import android.app.Dialog;
 import android.app.DialogFragment;
 import android.os.Bundle;
 import android.text.InputType;
