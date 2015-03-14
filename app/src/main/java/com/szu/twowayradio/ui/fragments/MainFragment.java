@@ -2,6 +2,7 @@ package com.szu.twowayradio.ui.fragments;
 
 import android.app.DialogFragment;
 import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -13,10 +14,16 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.szu.twowayradio.R;
+import com.szu.twowayradio.domains.AdpcmState;
 import com.szu.twowayradio.domains.User;
 import com.szu.twowayradio.network.NetWorkService;
+import com.szu.twowayradio.service.AudioService;
 import com.szu.twowayradio.service.ConnectService;
 import com.szu.twowayradio.ui.base.BaseFragment;
+import com.szu.twowayradio.utils.Adpcm;
+import com.szu.twowayradio.utils.AudioTrackHelper;
+import com.szu.twowayradio.utils.ByteConvert;
+import com.szu.twowayradio.utils.DebugLog;
 import com.szu.twowayradio.utils.PreferenceUtil;
 import com.szu.twowayradio.utils.RecordHelper;
 import com.szu.twowayradio.utils.ToastUtil;
@@ -27,12 +34,17 @@ import com.szu.twowayradio.views.SpeakButton;
 /**
  * lgp on 2014/10/28.
  */
-public class MainFragment extends BaseFragment implements RecordHelper.RecordListener, ConnectService.ConnectListener{
+public class MainFragment extends BaseFragment implements RecordHelper.RecordListener, ConnectService.ConnectListener,
+        AudioTrackHelper.PlayListener{
 
     private SpeakButton speaker;
     private ImageView speakerLight;
     private RecordHelper recordHelper;
-
+    private AudioTrackHelper trackHelper;
+    private AudioTrack track;
+    private AdpcmState stateCoder = new AdpcmState();
+    private AdpcmState stateDeCoder = new AdpcmState();
+    private byte[] recordBuf;
     public static MainFragment newInstance()
     {
         MainFragment fragment = new MainFragment();
@@ -42,9 +54,17 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        connectToServer(getAppContext().getUser());
+        connectToServer();
         recordHelper = new RecordHelper();
         recordHelper.setRecordListener(this);
+        trackHelper = new AudioTrackHelper();
+        trackHelper.setPlayListener(this);
+
+        recordBuf = new byte[984 * 2];
+        stateCoder.setIndex((byte) 0);
+        stateCoder.setValprev((short) 0);
+        stateDeCoder.setIndex((byte) 0);
+        stateDeCoder.setValprev((short) 0);
     }
 
     @Override
@@ -92,16 +112,13 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
                 speakButtonUp();
             }
         });
-        speaker.setEnabled(false);
+        speaker.setEnabled(ConnectService.getInstance().isConnect());
     }
 
     private void speakButtonDown()
     {
-        if (speaker.isPressed())
-        {
-            speakerLight.setImageDrawable(getActivity().getResources().getDrawable(R.drawable.a3q));
-            recordHelper.startRecord();
-        }
+        speakerLight.setImageDrawable(getActivity().getResources().getDrawable(R.drawable.a3q));
+        recordHelper.startRecord();
     }
 
     private void speakButtonUp()
@@ -152,27 +169,74 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     }
 
     @Override
-    public void recording(AudioRecord record) {
+    public void recording(final AudioRecord record) {
+        //DebugLog.e("recording");
+        ToastUtil.show(getActivity(), "recording");
         //do some network transfer
         NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
             @Override
             public void run() {
+                while(recordHelper.isRecord())
+                {
+                    int readSize = record.read(recordBuf, 0, recordBuf.length);
+                    short [] recordShort = new short[recordBuf.length / 2];
+                    for(int i=0; i<recordShort.length; i++)
+                    {
+                        recordShort[i] = ByteConvert.bytesToShort(recordBuf, 2 * i);
+                    }
+                    byte[] out = new byte[recordShort.length];
+                    Adpcm.adpcmCoder(recordShort, out, recordShort.length, stateCoder);
+                    if(readSize != AudioRecord.ERROR_INVALID_OPERATION && readSize != AudioRecord.ERROR_BAD_VALUE)
+                    {
+                        //send byte[] out
+                        AudioService.getInstance().sendAudio(out);
+                    }
 
+                }
             }
         });
     }
 
     @Override
     public void connectSuccess(User user) {
+        NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                trackHelper.startPlay();
+                while (ConnectService.getInstance().isConnect())
+                {
+                    byte [] receive = AudioService.getInstance().receiveAudio();
+                    if (receive == null)
+                        continue;
+                    short [] recordShort = new short[receive.length];
+                    byte [] audioBuf = new byte[2 * receive.length];
+
+                    Adpcm.adpcmDecoder(receive, recordShort, receive.length, stateDeCoder);
+                    for(int i=0; i<recordShort.length; i++)
+                    {
+                        ByteConvert.shortToBytes(audioBuf, recordShort[i], 2 * i);
+                    }
+                    DebugLog.e("receive audio length-->" + audioBuf.length);
+                    track.write(audioBuf, 0, audioBuf.length);
+                }
+            }
+        });
+        if (speaker == null)
+            return;
         speaker.setEnabled(true);
+
     }
 
     @Override
     public void connectFail() {
+        if (getActivity() == null)
+            return;
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 ToastUtil.show(getActivity(), "无法链接服务器");
+                if (speaker == null)
+                    return;
                 speaker.setEnabled(false);
             }
         });
@@ -180,15 +244,15 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
 
     @Override
     public void disconnectSuccess() {
-
+        DebugLog.e("disconnectSuccess");
     }
 
     @Override
     public void disconnectFail() {
-
+        DebugLog.e("disconnectFail");
     }
 
-    private void connectToServer(final User user)
+    private void connectToServer()
     {
         ConnectService.getInstance().setConnectListener(this);
 
@@ -197,18 +261,24 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
             NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
                 @Override
                 public void run() {
+                    DebugLog.d("re connect");
                     ConnectService.getInstance().disconnect();
-                    ConnectService.getInstance().connect(user);
+                    ConnectService.getInstance().connect();
                 }
             });
         }else{
             NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
                 @Override
                 public void run() {
-                    ConnectService.getInstance().connect(user);
+                    ConnectService.getInstance().connect();
                 }
             });
         }
+    }
+
+    @Override
+    public void playing(AudioTrack track) {
+        this.track = track;
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.szu.twowayradio.network;
 
 public class NetWorkConfig {
 	
-	public final static String DEFAULT_SERVER_IP = "192.168.1.159";
+	public final static String DEFAULT_SERVER_IP = "192.168.1.150";
 	
     public final static int DEFAULT_PORT = 3301;
     

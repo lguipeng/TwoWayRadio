@@ -10,15 +10,19 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 
 public class UdpHelper {
-	
+	private static UdpHelper helper = new UdpHelper();
 	private String serverIp;
 	private int serverPort;
 	private int timeout;
     private DatagramSocket socket;
     private InetAddress address;
-    
+    private boolean init;
+    public static UdpHelper getInstance()
+    {
+        return helper;
+    }
     //use the default network configuration 
-    public UdpHelper()
+    private UdpHelper()
     {
     	this(NetWorkConfig.DEFAULT_SERVER_IP, NetWorkConfig.DEFAULT_PORT
     		, NetWorkConfig.DEFAULT_TIMEOUT);
@@ -41,7 +45,8 @@ public class UdpHelper {
         try{
             address = InetAddress.getByName(serverIp);
             socket = new DatagramSocket(serverPort);
-            socket.setSoTimeout(timeout);
+            //socket.setSoTimeout(timeout);
+            setInit(true);
         }catch(SocketException exception)
         {
         	exception.printStackTrace();
@@ -85,11 +90,12 @@ public class UdpHelper {
      */
     public DatagramPacket receive()
     {
-    	DatagramPacket pack = new DatagramPacket(new byte[1024],1024);
+    	DatagramPacket pack = new DatagramPacket(new byte[1024], 1024);
     	if(socket != null)
     	{
     		try {
 				socket.receive(pack);
+                //DebugLog.e("" + pack.getData()[0]);
 				return pack;
 				
 			} catch (IOException e) {
@@ -106,7 +112,16 @@ public class UdpHelper {
     	{
     		socket.close();
     		socket = null;
+            setInit(false);
     	}
+    }
+
+    public boolean isInit() {
+        return init;
+    }
+
+    public void setInit(boolean init) {
+        this.init = init;
     }
 
     /**

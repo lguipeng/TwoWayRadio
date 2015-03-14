@@ -24,7 +24,6 @@ public class RecordHelper {
 	}
 
     public RecordHelper() {
-        init();
     }
 
     private void init()
@@ -33,12 +32,13 @@ public class RecordHelper {
                channelConfig, audioFormat);  
         Log.d("RecordHelper init", ""+bufferSizeInBytes);
         audioRecord = new AudioRecord(audioSource, sampleRateInHz,  
-                channelConfig, audioFormat, bufferSizeInBytes);  
+                channelConfig, audioFormat, bufferSizeInBytes);
     }
 
     public void startRecord()
     {
-    	audioRecord.startRecording();
+    	init();
+        audioRecord.startRecording();
     	isRecord = true;
     	if (recordListener != null)
     	{
