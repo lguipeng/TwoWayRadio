@@ -4,4 +4,6 @@
     <color name="blue_pressed">#FF5CACEE</color>
     <color name="dark_grey">#333333</color>
     <color name="grey">#696969</color>
+    <color name="light_grey">#FFAAAAAA</color>
+    <color name="light_grey_1">#FFEEEEEE</color>
 </resources>

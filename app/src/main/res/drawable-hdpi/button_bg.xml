@@ -3,16 +3,16 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="false">
         <shape android:shape="rectangle">
-            <corners android:radius="10dp"/>
-            <gradient android:startColor="@color/grey" android:angle="270"
-                android:endColor="@color/grey"/>
+            <corners android:radius="@dimen/background_view_rounded_radius"/>
+            <gradient android:startColor="@color/light_grey_1" android:angle="270"
+                android:endColor="@color/light_grey_1"/>
         </shape>
     </item>
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
-            <corners android:radius="10dp"/>
-            <gradient android:startColor="@color/dark_grey" android:angle="270"
-                android:endColor="@color/dark_grey"/>
+            <corners android:radius="@dimen/background_view_rounded_radius"/>
+            <gradient android:startColor="@color/light_grey" android:angle="270"
+                android:endColor="@color/light_grey"/>
         </shape>
     </item>
 </selector>

@@ -8,7 +8,7 @@ import com.szu.twowayradio.utils.Logger;
 import com.szu.twowayradio.utils.Md5Convert;
 
 /**
- * Created by lgp on 2014/9/2.
+ *  lgp on 2014/9/2.
  */
 public class ConnectService {
     public final String TAG = getClass().getSimpleName();

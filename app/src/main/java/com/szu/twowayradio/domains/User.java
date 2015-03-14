@@ -2,7 +2,7 @@ package com.szu.twowayradio.domains;
 
 
 /**
- * Created by lgp on 2014/9/2.
+ * lgp on 2014/9/2.
  */
 public class User implements java.io.Serializable{
 
@@ -22,7 +22,7 @@ public class User implements java.io.Serializable{
     }
 
     public User(String name, String password) {
-        this(name,password,1);
+        this(name, password, 1);
     }
 
     public User(String name, String password, int transactionID) {

@@ -5,7 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Created by lgp on 2014/9/2.
+ * lgp on 2014/9/2.
  */
 public class Md5Convert {
 

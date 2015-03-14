@@ -4,7 +4,8 @@ import android.app.Application;
 
 import com.szu.twowayradio.domains.User;
 import com.szu.twowayradio.network.NetWorkConfig;
-import com.szu.twowayradio.utils.PreferenceUtils;
+import com.szu.twowayradio.utils.PreferenceUtil;
+import com.szu.twowayradio.utils.UsetUtil;
 
 public class App extends Application{
 
@@ -25,16 +26,14 @@ public class App extends Application{
 
     private void init()
     {
-        if (PreferenceUtils.getInstance(getApplicationContext()).getBooleanParam(PreferenceUtils.FIRST_USE_KEY))
+        if (PreferenceUtil.getInstance(getApplicationContext()).getBooleanParam(PreferenceUtil.FIRST_USE_KEY))
         {
-            PreferenceUtils.getInstance(getApplicationContext()).putParam(PreferenceUtils.FIRST_USE_KEY,false);
-            PreferenceUtils.getInstance(getApplicationContext()).putParam(PreferenceUtils.USERNAME_KEY,"admin");
-            PreferenceUtils.getInstance(getApplicationContext()).putParam(PreferenceUtils.PASSWORD_KEY,"admin");
-            PreferenceUtils.getInstance(getApplicationContext()).putParam(PreferenceUtils.IP_KEY, NetWorkConfig.DEFAULT_SERVER_IP);
-            PreferenceUtils.getInstance(getApplicationContext()).putParam(PreferenceUtils.PORT_KEY, NetWorkConfig.DEFAULT_PORT+"");
+            PreferenceUtil.getInstance(getApplicationContext()).saveParam(PreferenceUtil.FIRST_USE_KEY, false);
+            PreferenceUtil.getInstance(getApplicationContext()).saveParam(PreferenceUtil.USERNAME_KEY, "admin");
+            PreferenceUtil.getInstance(getApplicationContext()).saveParam(PreferenceUtil.PASSWORD_KEY, "admin");
+            PreferenceUtil.getInstance(getApplicationContext()).saveParam(PreferenceUtil.IP_KEY, NetWorkConfig.DEFAULT_SERVER_IP);
+            PreferenceUtil.getInstance(getApplicationContext()).saveParam(PreferenceUtil.PORT_KEY, NetWorkConfig.DEFAULT_PORT + "");
         }
-        user = new User(PreferenceUtils.getInstance(getApplicationContext()).getStringParam(PreferenceUtils.USERNAME_KEY),
-                PreferenceUtils.getInstance(getApplicationContext()).getStringParam(PreferenceUtils.PASSWORD_KEY));
-
+        user = UsetUtil.loadUserFromLocal(getApplicationContext());
     }
 }

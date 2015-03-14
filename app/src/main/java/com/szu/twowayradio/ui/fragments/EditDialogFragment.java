@@ -11,7 +11,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.szu.twowayradio.R;
-import com.szu.twowayradio.utils.PreferenceUtils;
+import com.szu.twowayradio.utils.PreferenceUtil;
 
 /**
  * Created by lgp on 2014/10/29.
@@ -74,14 +74,14 @@ public class EditDialogFragment extends DialogFragment{
         titleTextView.setText(getActivity().getResources().getString(titleString));
         if (titleString == R.string.change_user)
         {
-            editText01.setText(PreferenceUtils.getInstance(getActivity()).getStringParam(PreferenceUtils.USERNAME_KEY));
-            editText02.setText(PreferenceUtils.getInstance(getActivity()).getStringParam(PreferenceUtils.PASSWORD_KEY));
+            editText01.setText(PreferenceUtil.getInstance(getActivity()).getStringParam(PreferenceUtil.USERNAME_KEY));
+            editText02.setText(PreferenceUtil.getInstance(getActivity()).getStringParam(PreferenceUtil.PASSWORD_KEY));
             editText02.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
             dialogType = DialogType.CHANGE_USER;
         }else
         {
-            editText01.setText(PreferenceUtils.getInstance(getActivity()).getStringParam(PreferenceUtils.IP_KEY));
-            editText02.setText(PreferenceUtils.getInstance(getActivity()).getStringParam(PreferenceUtils.PORT_KEY));
+            editText01.setText(PreferenceUtil.getInstance(getActivity()).getStringParam(PreferenceUtil.IP_KEY));
+            editText02.setText(PreferenceUtil.getInstance(getActivity()).getStringParam(PreferenceUtil.PORT_KEY));
             dialogType = DialogType.CHANGE_ADDRESS;
         }
         sureButton.setOnClickListener(new View.OnClickListener() {

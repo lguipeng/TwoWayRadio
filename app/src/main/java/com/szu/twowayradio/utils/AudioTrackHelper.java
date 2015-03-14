@@ -6,13 +6,14 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 
 public class AudioTrackHelper {
-	private AudioTrack track;
 
-	private PlayListener playListener = null;
+    private AudioTrack track;
 
-	private int bufSize = 0;
+    private PlayListener playListener = null;
 
-	private boolean isPlay;
+    private int bufSize = 0;
+
+    private boolean isPlay;
 
     public AudioTrackHelper() {
         init();

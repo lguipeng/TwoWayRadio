@@ -50,11 +50,11 @@ public class NmcpHead implements Serializable{
     
     public NmcpHead(byte version,byte subpID,byte descrip,short length,int transactionID)
     {
-    	this.version=version;
-    	this.subpID=subpID;
-    	this.descrip=descrip;
-    	this.length=length;
-    	this.transactionID=transactionID;
+    	this.version = version;
+    	this.subpID = subpID;
+    	this.descrip = descrip;
+    	this.length = length;
+    	this.transactionID = transactionID;
     }
     
     public NmcpHead(byte subpID,byte descrip,short length,int transactionID)

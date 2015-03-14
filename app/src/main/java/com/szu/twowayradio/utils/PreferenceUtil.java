@@ -6,7 +6,7 @@ import android.content.SharedPreferences;
 /**
  * Created by lgp on 2014/10/30.
  */
-public class PreferenceUtils {
+public class PreferenceUtil {
 
     public final static String USERNAME_KEY = "USERNAME_KEY";
 
@@ -26,18 +26,18 @@ public class PreferenceUtils {
 
     private SharedPreferences.Editor shareEditor;
 
-    private static PreferenceUtils preferenceUtils = null;
+    private static PreferenceUtil preferenceUtils = null;
 
-    private PreferenceUtils(Context context) {
+    private PreferenceUtil(Context context) {
         sharedPreferences = context.getSharedPreferences(fileName,Context.MODE_PRIVATE);
         shareEditor = sharedPreferences.edit();
     }
 
-    public static PreferenceUtils getInstance(Context context)
+    public static PreferenceUtil getInstance(Context context)
     {
         if (preferenceUtils == null)
         {
-            preferenceUtils = new PreferenceUtils(context);
+            preferenceUtils = new PreferenceUtil(context);
         }
         return preferenceUtils;
     }
@@ -47,7 +47,7 @@ public class PreferenceUtils {
         return sharedPreferences.getString(key,"null");
     }
 
-    public void putParam(String key,String value)
+    public void saveParam(String key, String value)
     {
         shareEditor.putString(key,value).commit();
     }
@@ -57,7 +57,7 @@ public class PreferenceUtils {
         return sharedPreferences.getBoolean(key,true);
     }
 
-    public void putParam(String key,boolean value)
+    public void saveParam(String key, boolean value)
     {
         shareEditor.putBoolean(key,value).commit();
     }

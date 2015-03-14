@@ -29,6 +29,18 @@ public class SpeakButton extends Button{
         return super.onTouchEvent(event);
     }
 
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (!enabled)
+        {
+            setAlpha(0.2f);
+        }
+        else{
+            setAlpha(1.0f);
+        }
+    }
+
     private void onDown(MotionEvent event)
     {
         if(mListener != null)

@@ -95,9 +95,7 @@ public class UdpHelper {
 			} catch (IOException e) {
                 e.printStackTrace();
                 Log.e("UdpClient in receive", "IOException");
-			}finally {
-                return null;
-            }
+			}
         }
         return null;
     }

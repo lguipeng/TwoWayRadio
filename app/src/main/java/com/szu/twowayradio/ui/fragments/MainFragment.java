@@ -3,8 +3,6 @@ package com.szu.twowayradio.ui.fragments;
 import android.app.DialogFragment;
 import android.media.AudioRecord;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,38 +17,27 @@ import com.szu.twowayradio.domains.User;
 import com.szu.twowayradio.network.NetWorkService;
 import com.szu.twowayradio.service.ConnectService;
 import com.szu.twowayradio.ui.base.BaseFragment;
-import com.szu.twowayradio.utils.PreferenceUtils;
+import com.szu.twowayradio.utils.PreferenceUtil;
 import com.szu.twowayradio.utils.RecordHelper;
-import com.szu.twowayradio.utils.ToastUtils;
+import com.szu.twowayradio.utils.ToastUtil;
+import com.szu.twowayradio.utils.UsetUtil;
 import com.szu.twowayradio.views.SpeakButton;
 
 
 /**
- * Created by lgp on 2014/10/28.
+ * lgp on 2014/10/28.
  */
-public class MainFragment extends BaseFragment implements RecordHelper.RecordListener{
+public class MainFragment extends BaseFragment implements RecordHelper.RecordListener, ConnectService.ConnectListener{
 
     private SpeakButton speaker;
     private ImageView speakerLight;
     private RecordHelper recordHelper;
-    private final int ERROR = 0x01;
 
     public static MainFragment newInstance()
     {
         MainFragment fragment = new MainFragment();
         return fragment;
     }
-
-    private Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            if(msg.what == ERROR)
-            {
-                ToastUtils.show(getActivity(),"无法连接服务器");
-            }
-            super.handleMessage(msg);
-        }
-    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -62,7 +49,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view  = inflater.inflate(R.layout.main_fragment,container,false);
+        View view  = inflater.inflate(R.layout.main_fragment, container, false);
         speaker = (SpeakButton)view.findViewById(R.id.speaker);
         speakerLight = (ImageView)view.findViewById(R.id.speaker_light);
         init();
@@ -105,17 +92,22 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
                 speakButtonUp();
             }
         });
+        speaker.setEnabled(false);
     }
 
     private void speakButtonDown()
     {
-        speakerLight.setImageDrawable(getActivity().getResources().getDrawable(R.drawable.a3q));
-        recordHelper.startRecord();
+        if (speaker.isPressed())
+        {
+            speakerLight.setImageDrawable(getActivity().getResources().getDrawable(R.drawable.a3q));
+            recordHelper.startRecord();
+        }
     }
 
     private void speakButtonUp()
     {
         speakerLight.setImageDrawable(getActivity().getResources().getDrawable(R.drawable.a3p));
+        recordHelper.stopRecord();
     }
 
     private void changeUserEvent()
@@ -126,8 +118,9 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
         fragment.setListener(new EditDialogFragment.ButtonListener() {
             @Override
             public void onSure(EditDialogFragment.DialogType type, String arg1, String arg2) {
-                PreferenceUtils.getInstance(getActivity()).putParam(PreferenceUtils.USERNAME_KEY,arg1);
-                PreferenceUtils.getInstance(getActivity()).putParam(PreferenceUtils.PASSWORD_KEY,arg2);
+                getAppContext().getUser().setName(arg1);
+                getAppContext().getUser().setPassword(arg2);
+                UsetUtil.saveUserToLocal(getAppContext().getUser(), getActivity());
                 fragment.dismiss();
             }
 
@@ -142,12 +135,12 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     {
         final EditDialogFragment fragment = EditDialogFragment.newInstance(EditDialogFragment.DialogType.CHANGE_ADDRESS);
         fragment.setStyle(DialogFragment.STYLE_NO_TITLE,R.style.DialogFragment);
-        fragment.show(getFragmentManager(),"change_address");
+        fragment.show(getFragmentManager(), "change_address");
         fragment.setListener(new EditDialogFragment.ButtonListener() {
             @Override
             public void onSure(EditDialogFragment.DialogType type, String arg1, String arg2) {
-                PreferenceUtils.getInstance(getActivity()).putParam(PreferenceUtils.IP_KEY,arg1);
-                PreferenceUtils.getInstance(getActivity()).putParam(PreferenceUtils.PORT_KEY,arg2);
+                PreferenceUtil.getInstance(getActivity()).saveParam(PreferenceUtil.IP_KEY, arg1);
+                PreferenceUtil.getInstance(getActivity()).saveParam(PreferenceUtil.PORT_KEY, arg2);
                 fragment.dismiss();
             }
 
@@ -169,37 +162,63 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
         });
     }
 
-    private void connectToServer(final User user)
-    {
-        ConnectService.getInstance().setConnectListener(new ConnectService.ConnectListener() {
+    @Override
+    public void connectSuccess(User user) {
+        speaker.setEnabled(true);
+    }
+
+    @Override
+    public void connectFail() {
+        getActivity().runOnUiThread(new Runnable() {
             @Override
-            public void connectSuccess(User user) {
-
-            }
-
-            @Override
-            public void connectFail() {
-                Message message = handler.obtainMessage();
-                message.what = ERROR;
-                handler.sendMessage(message);
-            }
-
-            @Override
-            public void disconnectSuccess() {
-
-            }
-
-            @Override
-            public void disconnectFail() {
-
+            public void run() {
+                ToastUtil.show(getActivity(), "无法链接服务器");
+                speaker.setEnabled(false);
             }
         });
+    }
+
+    @Override
+    public void disconnectSuccess() {
+
+    }
+
+    @Override
+    public void disconnectFail() {
+
+    }
+
+    private void connectToServer(final User user)
+    {
+        ConnectService.getInstance().setConnectListener(this);
+
+        if (ConnectService.getInstance().isConnect())
+        {
+            NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    ConnectService.getInstance().disconnect();
+                    ConnectService.getInstance().connect(user);
+                }
+            });
+        }else{
+            NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    ConnectService.getInstance().connect(user);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
         NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
             @Override
             public void run() {
-                ConnectService.getInstance().connect(user);
+                ConnectService.getInstance().disconnect();
             }
         });
-
     }
 }

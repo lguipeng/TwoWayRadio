@@ -3,9 +3,10 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item >
         <shape android:shape="rectangle">
-            <corners android:radius="10dp"/>
+            <corners android:radius="@dimen/background_view_rounded_radius"/>
             <gradient android:startColor="@android:color/white" android:angle="270"
-                android:endColor="@color/grey"/>
+                android:centerColor="@color/light_grey_1"
+                android:endColor="@android:color/white"/>
         </shape>
     </item>
 </selector>

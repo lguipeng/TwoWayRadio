@@ -8,7 +8,7 @@ import com.szu.twowayradio.ui.fragments.MainFragment;
 import com.szu.twowayradio.ui.base.BaseActivity;
 
 /**
- * Created by lgp on 2014/10/28.
+ *  lgp on 2014/10/28.
  */
 public class MainActivity  extends BaseActivity {
     MainFragment mainFragment = null;
