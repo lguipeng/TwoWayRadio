@@ -245,6 +245,12 @@ public class ConnectService {
         }
     }
 
+    public void sendBeat()
+    {
+        byte beat[] = {0x21 ,0x07 ,0x00 ,0x00 ,0x01 ,0x00 ,0x00 ,0x00};
+        udpHelper.send(beat);
+    }
+
     private void setConnect(boolean coon)
     {
         isConnect = coon;

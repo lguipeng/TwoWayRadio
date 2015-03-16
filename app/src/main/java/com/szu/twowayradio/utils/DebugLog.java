@@ -110,8 +110,9 @@ public class DebugLog{
     {
         for (int i=0; i<len; i++)
         {
-            e("bytes" + i + " " + bytes[i]);
+            System.out.printf(",0x%x", bytes[i]);
         }
+        System.out.println("--------------------------------");
     }
 
     public static void printBytes(byte[] bytes)

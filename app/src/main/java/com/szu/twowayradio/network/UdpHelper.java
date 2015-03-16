@@ -90,18 +90,25 @@ public class UdpHelper {
      */
     public DatagramPacket receive()
     {
-    	DatagramPacket pack = new DatagramPacket(new byte[1024], 1024);
-    	if(socket != null)
-    	{
-    		try {
-				socket.receive(pack);
+    	return receive(1024);
+    }
+
+    public DatagramPacket receive(int length)
+    {
+        if (length <= 0)
+            return null;
+        DatagramPacket pack = new DatagramPacket(new byte[length], length);
+        if(socket != null)
+        {
+            try {
+                socket.receive(pack);
                 //DebugLog.e("" + pack.getData()[0]);
-				return pack;
-				
-			} catch (IOException e) {
+                return pack;
+
+            } catch (IOException e) {
                 e.printStackTrace();
                 Log.e("UdpClient in receive", "IOException");
-			}
+            }
         }
         return null;
     }
