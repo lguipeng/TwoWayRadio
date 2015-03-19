@@ -44,7 +44,7 @@ public class UdpHelper {
     {
         try{
             address = InetAddress.getByName(serverIp);
-            socket = new DatagramSocket(serverPort);
+            socket = new DatagramSocket();
             //socket.setSoTimeout(timeout);
             setInit(true);
         }catch(SocketException exception)
@@ -68,7 +68,7 @@ public class UdpHelper {
      */
     public boolean send(byte[] content)
     {
-    	DatagramPacket packet = new DatagramPacket(content, content.length,address,serverPort);
+    	DatagramPacket packet = new DatagramPacket(content, content.length, address, NetWorkConfig.SERVER_PORT);
     	try{
     	    if(socket != null)
     		    socket.send(packet);
@@ -97,12 +97,11 @@ public class UdpHelper {
     {
         if (length <= 0)
             return null;
-        DatagramPacket pack = new DatagramPacket(new byte[length], length);
+        DatagramPacket pack = new DatagramPacket(new byte[length], length, address, NetWorkConfig.SERVER_PORT);
         if(socket != null)
         {
             try {
                 socket.receive(pack);
-                //DebugLog.e("" + pack.getData()[0]);
                 return pack;
 
             } catch (IOException e) {

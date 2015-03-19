@@ -144,6 +144,87 @@ public class Adpcm {
     }
 
 
+    public static int code(short[] input, byte[] output, int len, AdpcmState state)
+    {
+        return code(state, input, 0, len, output, 0);
+    }
+
+    public static int code(AdpcmState state, short[] input, int inp, int len, byte[] output, int outp) {
+        int sign;
+        int delta;
+        int vpdiff;
+
+        int valprev = state.getValprev();
+        int index = state.getIndex();
+
+        int step = stepsizeTable[index];
+        int outputbuffer = 0;
+        int bufferstep = 1;
+
+        output[outp + 2] = (byte)index;
+        output[outp + 3] = (byte)0;
+        outp += 4;
+
+        int count = len;
+        while (--count >= 0) {
+
+            delta = input[inp++] - valprev;
+            sign = (delta < 0) ? 8 : 0;
+            if ( 0 != sign ) delta = (-delta);
+
+            int tmp = 0;
+            vpdiff = step >> 3;
+            if ( delta > step ) {
+                tmp = 4;
+                delta -= step;
+                vpdiff += step;
+            }
+            step >>= 1;
+            if ( delta > step  ) {
+                tmp |= 2;
+                delta -= step;
+                vpdiff += step;
+            }
+            step >>= 1;
+            if ( delta > step ) {
+                tmp |= 1;
+                vpdiff += step;
+            }
+            delta = tmp;
+
+            if ( 0 != sign )
+                valprev -= vpdiff;
+            else
+                valprev += vpdiff;
+
+            if ( valprev > 32767 )
+                valprev = 32767;
+            else if ( valprev < -32768 )
+                valprev = -32768;
+
+            delta |= sign;
+
+            index += indexTable[delta];
+            if ( index < 0 ) index = 0;
+            if ( index > 88 ) index = 88;
+            step = stepsizeTable[index];
+
+            if ( 0 != bufferstep ) {
+                outputbuffer = (delta << 4) & 0xf0;
+            } else {
+                output[outp++] = (byte)((delta & 0x0f) | outputbuffer);
+            }
+            bufferstep = (0 == bufferstep) ? 1 : 0;
+        }
+
+        if ( 0 == bufferstep )
+            output[outp++] = (byte)outputbuffer;
+
+        state.setValprev((short)valprev);
+        state.setIndex((byte)index);
+        return (len / 2) + 4;
+    }
+
 	public static  void adpcmDecoder (byte[] indata, short[] outdata, int len, AdpcmState state)
 	{
         byte[] inp;		/* Input buffer pointer */
@@ -222,5 +303,72 @@ public class Adpcm {
         state.setValprev((short) valpred);
         state.setIndex((byte) index);
 	}
+
+    public static int decode(byte[] input, short[] output, int len, AdpcmState state)
+    {
+        return decode(state, input, 0, len, output, 0);
+    }
+
+    public static int decode(AdpcmState state, byte[] input, int inp, int len, short[] output, int outp) {
+        int sign;
+        int delta;
+        int vpdiff;
+        int valprev = state.getValprev();
+        int index = state.getIndex();
+        int inputbuffer = 0;
+        int bufferstep = 0;
+
+        if ( index < 0 ) index = 0;
+        else if ( index > 88 ) index = 88;
+
+        int step = stepsizeTable[index];
+
+        inp += 4;
+
+        len = (len - 4) * 2;
+
+        int count = len;
+        while(count-- > 0) {
+
+            if ( 0 == bufferstep ) {
+                inputbuffer = input[inp++];
+                delta = (inputbuffer >> 4) & 0xf;
+                bufferstep = 1;
+            } else {
+                delta = inputbuffer & 0xf;
+                bufferstep = 0;
+            }
+
+            index += indexTable[delta];
+            if ( index < 0 ) index = 0;
+            else if ( index > 88 ) index = 88;
+
+            sign = delta & 8;
+            delta = delta & 7;
+
+            vpdiff = step >> 1;
+            if ( (delta & 4) == 4 ) vpdiff += (step << 2);
+            if ( (delta & 2) == 2 ) vpdiff += (step << 1);
+            if ( (delta & 1) == 1 ) vpdiff += step;
+            vpdiff >>= 2;
+
+            if ( 0 != sign )
+                valprev -= vpdiff;
+            else
+                valprev += vpdiff;
+
+            if ( valprev > 32767 )
+                valprev = 32767;
+            else if ( valprev < -32768 )
+                valprev = -32768;
+
+            step = stepsizeTable[index];
+            output[outp++] = (short) valprev;
+        }
+
+        state.setValprev((short) valprev);
+        state.setIndex((byte) index);
+        return len;
+    }
 	   
 }

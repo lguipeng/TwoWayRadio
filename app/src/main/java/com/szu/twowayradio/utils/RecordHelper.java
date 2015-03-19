@@ -16,7 +16,7 @@ public class RecordHelper {
     private static int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     private boolean isRecord = false;
     private int bufferSizeInBytes ;
-    private int BufferElements2Rec = 1024; // want to play 2048 (2K) since 2 bytes we use only 1024
+    public static final int BufferElements2Rec = 1024; // want to play 2048 (2K) since 2 bytes we use only 1024
     private int BytesPerElement = 2;
     
     public int getBufferSizeInBytes() {

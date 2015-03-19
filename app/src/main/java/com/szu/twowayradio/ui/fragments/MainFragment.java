@@ -22,7 +22,6 @@ import com.szu.twowayradio.service.ConnectService;
 import com.szu.twowayradio.ui.base.BaseFragment;
 import com.szu.twowayradio.utils.Adpcm;
 import com.szu.twowayradio.utils.AudioTrackHelper;
-import com.szu.twowayradio.utils.ByteConvert;
 import com.szu.twowayradio.utils.DebugLog;
 import com.szu.twowayradio.utils.PreferenceUtil;
 import com.szu.twowayradio.utils.RecordHelper;
@@ -31,7 +30,6 @@ import com.szu.twowayradio.utils.UsetUtil;
 import com.szu.twowayradio.views.SpeakButton;
 
 import java.util.Timer;
-import java.util.TimerTask;
 
 
 /**
@@ -49,7 +47,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     private AdpcmState stateCoder = new AdpcmState();
     private AdpcmState stateDeCoder = new AdpcmState();
     private short[] recordBuf;
-    private final int beatBreakTime = 21;
+    private final int beatBreakTime = 2100;
     public static MainFragment newInstance()
     {
         MainFragment fragment = new MainFragment();
@@ -178,7 +176,6 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
 
     @Override
     public void recording(final AudioRecord record) {
-        //DebugLog.e("recording");
         ToastUtil.show(getActivity(), "recording");
         //do some network transfer
         NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
@@ -187,8 +184,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
                 while(recordHelper.isRecord())
                 {
                     final int readSize = record.read(recordBuf, 0, recordBuf.length);
-
-                    final byte[] out = new byte[recordBuf.length];
+                    final byte[] out = new byte[recordBuf.length / 2];
                     Adpcm.adpcmCoder(recordBuf, out, recordBuf.length, stateCoder);
                     NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
                         @Override
@@ -218,34 +214,31 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
                     byte [] receive = AudioService.getInstance().receiveAudio(stateDeCoder);
                     if (receive == null)
                         continue;
-                    short [] recordShort = new short[receive.length];
-                    byte [] audioBuf = new byte[2 * receive.length];
+                    short [] audioBufShort = new short[ 2 * receive.length];
 
-                    Adpcm.adpcmDecoder(receive, recordShort, receive.length, stateDeCoder);
-                    for(int i=0; i<recordShort.length; i++)
-                    {
-                        ByteConvert.shortToBytes(audioBuf, recordShort[i], 2 * i);
-                    }
+                    Adpcm.decode(receive, audioBufShort, receive.length, stateDeCoder);
                     DebugLog.e("receive audio length-->" + receive.length);
-                    track.write(audioBuf, 0, audioBuf.length);
+                    track.write(audioBufShort, 0, audioBufShort.length);
+                }
+            }
+        });
+        NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (ConnectService.getInstance().isConnect()){
+                        Thread.sleep(beatBreakTime);
+                        ConnectService.getInstance().sendBeat();
+                        DebugLog.e("send beat");
+                    }
+                }catch (InterruptedException e){
+                    e.printStackTrace();
                 }
             }
         });
         if (speaker == null)
             return;
         speaker.setEnabled(true);
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        DebugLog.e("sendBeat-->");
-                        ConnectService.getInstance().sendBeat();
-                    }
-                });
-            }
-        }, beatBreakTime , beatBreakTime);
     }
 
     @Override
@@ -303,18 +296,13 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     }
 
     @Override
-    public void onDetach() {
-        super.onDetach();
+    public void onDestroy() {
+        super.onDestroy();
         NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
             @Override
             public void run() {
                 ConnectService.getInstance().disconnect();
             }
         });
-        if (timer != null)
-        {
-            timer.cancel();
-            timer = null;
-        }
     }
 }

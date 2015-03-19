@@ -3,7 +3,7 @@ package com.szu.twowayradio.service;
 import com.szu.twowayradio.domains.AdpcmState;
 import com.szu.twowayradio.network.UdpHelper;
 import com.szu.twowayradio.utils.ByteConvert;
-import com.szu.twowayradio.utils.DebugLog;
+import com.szu.twowayradio.utils.RecordHelper;
 
 import java.net.DatagramPacket;
 
@@ -12,8 +12,9 @@ import java.net.DatagramPacket;
  */
 public class AudioService {
     private static AudioService audioService = new AudioService();
-    public static final int AUDIO_DATA_LENGTH = 1024;
     public static final int AUDIO_DATA_HEAD_LENGTH = 84;
+    public static final int AUDIO_DATA_LENGTH = RecordHelper.BufferElements2Rec + AUDIO_DATA_HEAD_LENGTH;
+
     private UdpHelper udpHelper;
     public static AudioService getInstance()
     {
@@ -174,15 +175,17 @@ public class AudioService {
 
     public byte[] receiveAudio(AdpcmState state)
     {
-        byte[] buf = receive();
+        DatagramPacket packet = receive();
+        byte[] buf = packet.getData();
+        int length = packet.getLength();
         if (buf == null)
             return null;
-        if (buf.length <= AUDIO_DATA_HEAD_LENGTH)
+        if (length <= AUDIO_DATA_HEAD_LENGTH)
         {
             return null;
         }
 
-        byte[] temp = new byte[buf.length - AUDIO_DATA_HEAD_LENGTH];
+        byte[] temp = new byte[length - AUDIO_DATA_HEAD_LENGTH];
         for(int i=0; i<temp.length; i++){
             temp[i] = buf[i + AUDIO_DATA_HEAD_LENGTH];
         }
@@ -194,15 +197,14 @@ public class AudioService {
             state.setValprev(valprev);
             state.setIndex(index);
         }
-        DebugLog.printBytes(buf, 84);
         return temp;
     }
 
-    private byte[] receive()
+    private DatagramPacket receive()
     {
         DatagramPacket packet;
         if((packet = udpHelper.receive()) == null)
             return null;
-        return packet.getData();
+        return packet;
     }
 }
