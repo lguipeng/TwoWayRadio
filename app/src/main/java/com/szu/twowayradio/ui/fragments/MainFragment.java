@@ -17,6 +17,7 @@ import com.szu.twowayradio.R;
 import com.szu.twowayradio.domains.AdpcmState;
 import com.szu.twowayradio.domains.User;
 import com.szu.twowayradio.network.NetWorkService;
+import com.szu.twowayradio.network.UdpHelper;
 import com.szu.twowayradio.service.AudioService;
 import com.szu.twowayradio.service.ConnectService;
 import com.szu.twowayradio.ui.base.BaseFragment;
@@ -29,8 +30,6 @@ import com.szu.twowayradio.utils.ToastUtil;
 import com.szu.twowayradio.utils.UsetUtil;
 import com.szu.twowayradio.views.SpeakButton;
 
-import java.util.Timer;
-
 
 /**
  * lgp on 2014/10/28.
@@ -38,7 +37,6 @@ import java.util.Timer;
 public class MainFragment extends BaseFragment implements RecordHelper.RecordListener, ConnectService.ConnectListener,
         AudioTrackHelper.PlayListener{
 
-    private Timer timer = new Timer();
     private SpeakButton speaker;
     private ImageView speakerLight;
     private RecordHelper recordHelper;
@@ -46,8 +44,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     private AudioTrack track;
     private AdpcmState stateCoder = new AdpcmState();
     private AdpcmState stateDeCoder = new AdpcmState();
-    private short[] recordBuf;
-    private final int beatBreakTime = 2100;
+    private final int beatBreakTime = 21000;
     public static MainFragment newInstance()
     {
         MainFragment fragment = new MainFragment();
@@ -63,7 +60,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
         trackHelper = new AudioTrackHelper();
         trackHelper.setPlayListener(this);
 
-        recordBuf = new short[AudioService.AUDIO_DATA_LENGTH - AudioService.AUDIO_DATA_HEAD_LENGTH];
+
         stateCoder.setIndex((byte) 0);
         stateCoder.setValprev((short) 0);
         stateDeCoder.setIndex((byte) 0);
@@ -88,15 +85,30 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.change_user:
-                changeUserEvent();
-                return true;
             case R.id.change_address:
                 changeAddressEvent();
                 return true;
             case R.id.exit:
+                NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ToastUtil.show(getActivity(), "即将退出");
+                            }
+                        });
+                        ConnectService.getInstance().disconnect();
+                        //NetWorkService.getDefaultInstance().shutDown();
+                        android.os.Process.killProcess(android.os.Process.myPid());
+                    }
+                });
+
             case android.R.id.home:
-                getActivity().finish();
+                if (getActivity() != null)
+                {
+                    getActivity().finish();
+                }
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -124,6 +136,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
         {
             speakerLight.setImageDrawable(getActivity().getResources().getDrawable(R.drawable.a3q));
             recordHelper.startRecord();
+            trackHelper.startPlay();
         }
     }
 
@@ -131,6 +144,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     {
         speakerLight.setImageDrawable(getActivity().getResources().getDrawable(R.drawable.a3p));
         recordHelper.stopRecord();
+        trackHelper.startPlay();
     }
 
     private void changeUserEvent()
@@ -161,9 +175,20 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
         fragment.show(getFragmentManager(), "change_address");
         fragment.setListener(new EditDialogFragment.ButtonListener() {
             @Override
-            public void onSure(EditDialogFragment.DialogType type, String arg1, String arg2) {
+            public void onSure(EditDialogFragment.DialogType type, final String arg1, final String arg2) {
                 PreferenceUtil.getInstance(getActivity()).saveParam(PreferenceUtil.IP_KEY, arg1);
                 PreferenceUtil.getInstance(getActivity()).saveParam(PreferenceUtil.PORT_KEY, arg2);
+                NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        UdpHelper.getInstance().setServerIp(arg1);
+                        UdpHelper.getInstance().setServerPort(Integer.parseInt(arg2));
+                        if (ConnectService.getInstance().isConnect())
+                            ConnectService.getInstance().disconnect();
+                        UdpHelper.getInstance().initNetWork();
+                        connectToServer();
+                    }
+                });
                 fragment.dismiss();
             }
 
@@ -183,20 +208,36 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
             public void run() {
                 while(recordHelper.isRecord())
                 {
+                    final short[] recordBuf = new short[RecordHelper.BufferElements2Rec / 2];
                     final int readSize = record.read(recordBuf, 0, recordBuf.length);
-                    final byte[] out = new byte[recordBuf.length / 2];
-                    Adpcm.adpcmCoder(recordBuf, out, recordBuf.length, stateCoder);
+                    //calc1(recordBuf, 0, recordBuf.length);
                     NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
                         @Override
                         public void run() {
-                            if(readSize != AudioRecord.ERROR_INVALID_OPERATION && readSize != AudioRecord.ERROR_BAD_VALUE)
-                            {
+                            final byte[] out  = new byte[recordBuf.length / 2];
+                            if(readSize != AudioRecord.ERROR_INVALID_OPERATION && readSize != AudioRecord.ERROR_BAD_VALUE){
                                 //send byte[] out
-                                AudioService.getInstance().sendAudio(out, stateCoder);
+                                //AudioService.getInstance().sendAudio(out, stateCoder);
+                                //ByteConvert.htos(recordBuf, recordBuf.length);
+                                //short[] left = new short[recordBuf.length / 2];
+                                //ByteConvert.getOshort(recordBuf, left, recordBuf.length);
+                                //Adpcm.code(left, out, left.length, stateCoder);
+                                //Adpcm.decode(out, left, out.length, stateCoder);
+                                AdpcmState state = new AdpcmState();
+                                state.setIndex(stateCoder.getIndex());
+                                state.setValprev(stateCoder.getValprev());
+                                Adpcm.adpcmCoder(recordBuf, out, recordBuf.length, stateCoder);
+                                AudioService.getInstance().sendAudio(out, state);
+                                //Adpcm.adpcmDecoder(out, recordBuf, out.length, state);
+                                //calc1(left, 0, left.length);
+                                //ByteConvert.putOshort(recordBuf, left, recordBuf.length);
+                                //calc1(recordBuf, 0, recordBuf.length);
+                                //int  size = speex.encode(recordBuf, 0, out, recordBuf.length);
+                                //int srcsize = speex.decode(out, recordBuf, size);
+                                //track.write(recordBuf, 0, recordBuf.length);
                             }
                         }
                     });
-
                 }
             }
         });
@@ -204,20 +245,19 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
 
     @Override
     public void connectSuccess(User user) {
-
         NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
             @Override
             public void run() {
                 trackHelper.startPlay();
-                while (ConnectService.getInstance().isConnect())
+                while (true)
                 {
+                    DebugLog.d("receiveAudio ing --->");
                     byte [] receive = AudioService.getInstance().receiveAudio(stateDeCoder);
                     if (receive == null)
                         continue;
                     short [] audioBufShort = new short[ 2 * receive.length];
-
-                    Adpcm.decode(receive, audioBufShort, receive.length, stateDeCoder);
-                    DebugLog.e("receive audio length-->" + receive.length);
+                    Adpcm.adpcmDecoder(receive, audioBufShort, receive.length * 2, stateDeCoder);
+                    DebugLog.d("receive audio length-->" + audioBufShort.length);
                     track.write(audioBufShort, 0, audioBufShort.length);
                 }
             }
@@ -229,16 +269,21 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
                     while (ConnectService.getInstance().isConnect()){
                         Thread.sleep(beatBreakTime);
                         ConnectService.getInstance().sendBeat();
-                        DebugLog.e("send beat");
                     }
                 }catch (InterruptedException e){
                     e.printStackTrace();
                 }
             }
         });
-        if (speaker == null)
-            return;
-        speaker.setEnabled(true);
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ToastUtil.show(getActivity(), "成功链接服务器");
+                if (speaker == null)
+                    return;
+                speaker.setEnabled(true);
+            }
+        });
     }
 
     @Override
@@ -258,36 +303,47 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
 
     @Override
     public void disconnectSuccess() {
-        DebugLog.e("disconnectSuccess");
+        DebugLog.d("disconnectSuccess");
+        if (getActivity() == null)
+            return;
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (speaker != null)
+                {
+                    speaker.setEnabled(false);
+                }
+            }
+        });
     }
 
     @Override
     public void disconnectFail() {
-        DebugLog.e("disconnectFail");
+        DebugLog.d("disconnectFail");
+        if (getActivity() == null)
+            return;
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (speaker != null)
+                {
+                    speaker.setEnabled(false);
+                }
+            }
+        });
     }
 
     private void connectToServer()
     {
         ConnectService.getInstance().setConnectListener(this);
+        NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                DebugLog.d("connect--->");
+                ConnectService.getInstance().connect();
+            }
+        });
 
-        if (ConnectService.getInstance().isConnect())
-        {
-            NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    DebugLog.d("re connect");
-                    ConnectService.getInstance().disconnect();
-                    ConnectService.getInstance().connect();
-                }
-            });
-        }else{
-            NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    ConnectService.getInstance().connect();
-                }
-            });
-        }
     }
 
     @Override
@@ -298,11 +354,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     @Override
     public void onDestroy() {
         super.onDestroy();
-        NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                ConnectService.getInstance().disconnect();
-            }
-        });
+
     }
+
 }

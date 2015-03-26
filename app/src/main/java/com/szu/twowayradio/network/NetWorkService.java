@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 public class NetWorkService {
 
      private final ExecutorService pool;
-     private final static int DEFAULT_SIZE = 5;
+     private final static int DEFAULT_SIZE = 10;
      private static NetWorkService DefaultService = new NetWorkService(DEFAULT_SIZE);
      private static NetWorkService service = null;
 
@@ -37,7 +37,7 @@ public class NetWorkService {
      
      public void shutDown()
      {
-    	 pool.shutdown(); // Disable new tasks from being submitted
+         pool.shutdown(); // Disable new tasks from being submitted
     	   try {
     	     // Wait a while for existing tasks to terminate
     	       if (!pool.awaitTermination(60, TimeUnit.SECONDS)) 

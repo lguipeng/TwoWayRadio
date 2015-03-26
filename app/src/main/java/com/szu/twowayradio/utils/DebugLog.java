@@ -119,4 +119,18 @@ public class DebugLog{
     {
        printBytes(bytes, bytes.length);
     }
+
+    public static void printShorts(short[] shorts, int len)
+    {
+        for (int i=0; i<len; i++)
+        {
+            System.out.printf("0x%x ,", shorts[i]);
+        }
+        System.out.println("");
+    }
+
+    public static void printShorts(short[] shorts)
+    {
+        printShorts(shorts, shorts.length);
+    }
 }

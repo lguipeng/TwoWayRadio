@@ -28,16 +28,24 @@ public class UdpHelper {
     		, NetWorkConfig.DEFAULT_TIMEOUT);
     }
 
-    public UdpHelper(String ip,int port)
+    private UdpHelper(String ip,int port)
     {
     	this (ip, port, NetWorkConfig.DEFAULT_TIMEOUT);
     }
 
-    public UdpHelper(String ip, int port, int timeout)
+    private UdpHelper(String ip, int port, int timeout)
     {
     	this.serverIp = ip;
     	this.serverPort = port;
     	this.timeout = timeout;
+    }
+
+    public void setServerIp(String serverIp) {
+        this.serverIp = serverIp;
+    }
+
+    public void setServerPort(int serverPort) {
+        this.serverPort = serverPort;
     }
 
     public boolean initNetWork()
@@ -45,7 +53,7 @@ public class UdpHelper {
         try{
             address = InetAddress.getByName(serverIp);
             socket = new DatagramSocket();
-            //socket.setSoTimeout(timeout);
+            socket.setSoTimeout(timeout);
             setInit(true);
         }catch(SocketException exception)
         {
@@ -68,14 +76,13 @@ public class UdpHelper {
      */
     public boolean send(byte[] content)
     {
-    	DatagramPacket packet = new DatagramPacket(content, content.length, address, NetWorkConfig.SERVER_PORT);
+    	DatagramPacket packet = new DatagramPacket(content, content.length, address, serverPort);
     	try{
-    	    if(socket != null)
-    		    socket.send(packet);
-    	    else
+    	    if(socket != null && !socket.isClosed()){
+                socket.send(packet);
+            }else
     	    {
     	    	Log.e("UdpClient in send", "NullPointerException");
-    	    	throw new NullPointerException("socket is null"); 
     	    }
     	}catch(IOException e)
     	{
@@ -97,7 +104,7 @@ public class UdpHelper {
     {
         if (length <= 0)
             return null;
-        DatagramPacket pack = new DatagramPacket(new byte[length], length, address, NetWorkConfig.SERVER_PORT);
+        DatagramPacket pack = new DatagramPacket(new byte[length], length, address, serverPort);
         if(socket != null)
         {
             try {

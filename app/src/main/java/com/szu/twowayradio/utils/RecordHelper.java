@@ -4,7 +4,6 @@ package com.szu.twowayradio.utils;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
-import android.util.Log;
 
 public class RecordHelper {
 
@@ -16,7 +15,7 @@ public class RecordHelper {
     private static int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     private boolean isRecord = false;
     private int bufferSizeInBytes ;
-    public static final int BufferElements2Rec = 1024; // want to play 2048 (2K) since 2 bytes we use only 1024
+    public static final int BufferElements2Rec = 2048; // want to play 2048 (2K) since 2 bytes we use only 1024
     private int BytesPerElement = 2;
     
     public int getBufferSizeInBytes() {
@@ -30,14 +29,16 @@ public class RecordHelper {
     {
         bufferSizeInBytes = AudioRecord.getMinBufferSize(sampleRateInHz,  
                channelConfig, audioFormat);  
-        Log.d("RecordHelper init", ""+bufferSizeInBytes);
+        DebugLog.e("RecordHelper init " + bufferSizeInBytes);
         audioRecord = new AudioRecord(audioSource, sampleRateInHz,  
-                channelConfig, audioFormat, bufferSizeInBytes);
+                channelConfig, audioFormat, BufferElements2Rec);
     }
 
     public void startRecord()
     {
-    	init();
+    	if (isRecord)
+            return;
+        init();
         audioRecord.startRecording();
     	isRecord = true;
     	if (recordListener != null)

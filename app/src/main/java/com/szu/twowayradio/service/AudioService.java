@@ -3,7 +3,6 @@ package com.szu.twowayradio.service;
 import com.szu.twowayradio.domains.AdpcmState;
 import com.szu.twowayradio.network.UdpHelper;
 import com.szu.twowayradio.utils.ByteConvert;
-import com.szu.twowayradio.utils.RecordHelper;
 
 import java.net.DatagramPacket;
 
@@ -13,7 +12,7 @@ import java.net.DatagramPacket;
 public class AudioService {
     private static AudioService audioService = new AudioService();
     public static final int AUDIO_DATA_HEAD_LENGTH = 84;
-    public static final int AUDIO_DATA_LENGTH = RecordHelper.BufferElements2Rec + AUDIO_DATA_HEAD_LENGTH;
+    public static final int AUDIO_DATA_LENGTH = 512 + AUDIO_DATA_HEAD_LENGTH;
 
     private UdpHelper udpHelper;
     public static AudioService getInstance()
@@ -142,7 +141,8 @@ public class AudioService {
 //        GenPesHeader(0xffffffff, 4, len, buffer);
 //        len += 4;
 
-        byte[] head = {0x31,(byte)0xc6,0x4c,0x2,0x1,0x0,0x0,0x0,0x2,0x4,0xc,0x0,0x0,0x0,
+        byte[] head = {0x31,(byte)0xc6,0x4c,0x2,(byte)(ConnectService.transactionID & 0x000000ff), (byte)((ConnectService.transactionID >> 8) & 0x000000ff),
+                (byte)((ConnectService.transactionID >> 16 & 0x000000ff)), (byte)((ConnectService.transactionID >> 24) & 0x000000ff),0x2,0x4,0xc,0x0,0x0,0x0,
                 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,(byte)0xc0,0x2,0x3a,(byte)0x87,(byte)0xc0,0x17,
                 0x37,0x23,0x67,(byte)0xb3,0x61,0x17,0x23,0x67,(byte)0xb3,0x61,0xf,(byte)0x8b,(byte)0x80,0xa,0x0,(byte)0x80,0xa,
                 0x0,0x0,(byte)0xff,(byte)0xff,0x0,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,
@@ -176,6 +176,8 @@ public class AudioService {
     public byte[] receiveAudio(AdpcmState state)
     {
         DatagramPacket packet = receive();
+        if (packet == null)
+            return null;
         byte[] buf = packet.getData();
         int length = packet.getLength();
         if (buf == null)

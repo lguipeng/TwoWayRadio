@@ -86,7 +86,7 @@ public class ByteConvert {
 	  * @return int
 	  */
 	 public static int bytesToInt(byte b[],int offset) {
-	        return    b[0+offset] &0xff
+	        return    b[0+offset] & 0xff
 	              | (b[1+offset] & 0xff) << 8
 	              | (b[2+offset] & 0xff) << 16
 	              | (b[3+offset] & 0xff) << 24;
@@ -183,5 +183,39 @@ public class ByteConvert {
         {
             System.out.printf("%x ",b[i]);
         }
+    }
+
+    public static void htos(short [] src, int len){
+        for (int i=0; i<len; i++){
+            src[i] = (short)(src[i] << 8 | (src[i] >> 8 & 0x00ff));
+        }
+    }
+
+    public static void getOshort(short[] src, short[] dest, int len){
+        int j = 0;
+        for (int i=0; i<len; ){
+            dest[j] = src[i];
+            j++;
+            i+=2;
+        }
+    }
+
+    public static void putOshort(short[] src, short[] dest, int len){
+        int j = 0;
+        for (int i=0; i<len; ){
+            src[i] = dest[j];
+            j++;
+            i+=2;
+        }
+    }
+
+    public static short[] combinOshort(short[] dest1, short[] dest2, int len){
+        int j = 0;
+        short [] res = new short[len * 2];
+        for (int i=0; i<len; i++){
+            res[j++] = dest1[i];
+            res[j++] = dest2[i];
+        }
+        return res;
     }
 }

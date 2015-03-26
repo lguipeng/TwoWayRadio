@@ -34,6 +34,8 @@ public class App extends Application{
             PreferenceUtil.getInstance(getApplicationContext()).saveParam(PreferenceUtil.IP_KEY, NetWorkConfig.DEFAULT_SERVER_IP);
             PreferenceUtil.getInstance(getApplicationContext()).saveParam(PreferenceUtil.PORT_KEY, NetWorkConfig.DEFAULT_PORT + "");
         }
+        NetWorkConfig.DEFAULT_SERVER_IP = PreferenceUtil.getInstance(getApplicationContext()).getStringParam(PreferenceUtil.IP_KEY);
+        NetWorkConfig.DEFAULT_PORT = Integer.parseInt(PreferenceUtil.getInstance(getApplicationContext()).getStringParam(PreferenceUtil.PORT_KEY));
         user = UsetUtil.loadUserFromLocal(getApplicationContext());
     }
 }

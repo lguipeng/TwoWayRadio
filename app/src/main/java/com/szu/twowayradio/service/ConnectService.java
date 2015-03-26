@@ -19,7 +19,7 @@ public class ConnectService {
     private UdpHelper udpHelper;
     private boolean isConnect = false;
     private ConnectListener mConnectListener = null;
-
+    public static int transactionID;
     public static ConnectService getInstance()
     {
         return connectService;
@@ -33,13 +33,18 @@ public class ConnectService {
     public void connect(final User user)
     {
         NmcpHead head = new NmcpHead(NmcpHead.NMCP_SUBP_CONNECT, NmcpHead.CONN_CONNECT, 1);
-        if(!udpHelper.isInit() && !udpHelper.initNetWork())
+
+        if(!udpHelper.isInit())
         {
-            onConnectFailEvent();
-            return ;
+            if (!udpHelper.initNetWork()){
+                onConnectFailEvent();
+                DebugLog.e("initNetWork error");
+                return ;
+            }
+        }else{
+            DebugLog.e("initNetWork already");
         }
-        if(!udpHelper.send(head.getBytes()))
-            return;
+
         byte[] receive = receive();
 
         if(receive == null)
@@ -49,15 +54,15 @@ public class ConnectService {
         }
 
         user.setTransactionID(ByteConvert.bytesToInt(receive, 8));
-        Logger.getInstance().debug(TAG,"TransactionID is "+user.getTransactionID());
+        Logger.getInstance().debug(TAG, "TransactionID is "+user.getTransactionID());
         head.setTransactionID(user.getTransactionID());
         head.setSubpID(NmcpHead.NMCP_SUBP_OM);
         head.setDescrip( (byte)0 );
         head.setLength( (short)48 );
         byte[] type = new byte[12];
         ByteConvert.intToBytes(type, 0x00280001);
-        ByteConvert.intToBytes(type,0x00000001,4);
-        ByteConvert.intToBytes(type,0x00240001,8);
+        ByteConvert.intToBytes(type, 0x00000001,4);
+        ByteConvert.intToBytes(type, 0x00240001,8);
         byte[] loginMessage;
         if(user.getName().getBytes().length < User.USER_NAME_LEN)
         {
@@ -65,7 +70,7 @@ public class ConnectService {
             loginMessage = ByteConvert.combineBytes(56, head.getBytes(), type,user.getName().getBytes(), temp,
                     Md5Convert.md5(user.getName()));
         }else{
-            loginMessage = ByteConvert.combineBytes(56,head.getBytes(),type,user.getName().getBytes(),
+            loginMessage = ByteConvert.combineBytes(56, head.getBytes(),type,user.getName().getBytes(),
                     Md5Convert.md5(user.getPassword()));
         }
         ByteConvert.print(loginMessage);
@@ -126,33 +131,34 @@ public class ConnectService {
 
     public void disconnect()
     {
-        byte data0[] ={0x51, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, (byte) 0xC8, 0x00,
+        setConnect(false);
+        byte data0[] ={0x51, 0x00, 0x14, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff), (byte) 0xC8, 0x00,
                 0x0C, 0x00, 0x04, 0x00, 0x00, 0x00, (byte)0xC8, 0x00, 0x08, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
         udpHelper.send(data0);
 
-        byte data1[] ={0x51, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, (byte) 0xC8,
+        byte data1[] ={0x51, 0x00, 0x14, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff), (byte) 0xC8,
                 0x00, 0x0C, 0x00, 0x04, 0x00, 0x00, 0x00, (byte)0xC8, 0x00, 0x08, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
         udpHelper.send(data1);
 
-        byte data2[] ={0x51, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, (byte) 0xC8,
+        byte data2[] ={0x51, 0x00, 0x14, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff), (byte) 0xC8,
                 0x00, 0x0C, 0x00, 0x04, 0x00, 0x00, 0x00, (byte)0xC8, 0x00, 0x08, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
         udpHelper.send(data2);
 
-        byte[] buf0 = receive();
+        receive();
         receive();
         receive();
         //DebugLog.e("buf2[0]="+buf2[0]);
 
-        if(buf0[0] == -79) {
-            byte data3[] = {0x21, 0x09, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
-            udpHelper.send(data3);
-            onDisConnectSuccessEvent();
-        }else{
-            onDisConnectFailEvent();
-        }
+        byte data3[] = {0x21, 0x09, 0x00, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff)};
+        udpHelper.send(data3);
+        onDisConnectSuccessEvent();
     }
 
     public void connect()
@@ -171,9 +177,16 @@ public class ConnectService {
         byte data0[] = {0x21 ,0x01 ,0x00 ,0x00, 0x01,0x00 ,0x00 ,0x00};
         udpHelper.send(data0);
         byte[] buf0 = receive();
-        //DebugLog.e("buf0[0]=" + buf0[0]);
+        if (buf0 == null){
+            onConnectFailEvent();
+            return;
+        }
+        User user = new User("admin", "admin");
+        user.setTransactionID(ByteConvert.bytesToInt(buf0, 8));
+        transactionID = ByteConvert.bytesToInt(buf0, 8);
         if(buf0[0] == 0x21){
-            byte data1[] ={0x51, 0x00, 0x30, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00,
+            byte data1[] ={0x51, 0x00, 0x30, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                    (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff), 0x01, 0x00,
                     0x28, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x24, 0x00, 0x61,
                     0x64, 0x6D, 0x69, 0x6E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21, 0x23, 0x2F,
@@ -185,13 +198,18 @@ public class ConnectService {
             //DebugLog.e("buf1[0]=" + buf1[0]);
 
             byte[] buf2 = receive();
-            DebugLog.e("buf2[0]="+buf2[0]);
+            //DebugLog.e("buf2[0]="+buf2[0]);
+            if (buf2 == null){
+                onConnectFailEvent();
+                return;
+            }
             if(buf2[0] == 81){
-                byte data2[] ={(byte) 0xB1, (byte)0x9D, 0x08, 0x00, 0x01, 0x00, 0x00,
-                        0x00, 0x01, 0x00, (byte)0x88, 0x00, 0x01, 0x00, 0x00, 0x00};
+                byte data2[] ={(byte) 0xB1, (byte)0x9D, 0x08, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                        (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff), 0x01, 0x00, (byte)0x88, 0x00, 0x01, 0x00, 0x00, 0x00};
                 udpHelper.send(data2);
 
-                byte data3[] ={0x51, 0x00 ,0x14 ,0x00, 0x01, 0x00 ,0x00 ,0x00, (byte)0xC8,
+                byte data3[] ={0x51, 0x00 ,0x14 ,0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                        (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff), (byte)0xC8,
                         0x00 ,0x0C ,0x00, 0x02, 0x00, 0x00, 0x00, (byte)0xC8 ,0x00, 0x08,
                         0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 ,0x00 };
                 udpHelper.send(data3);
@@ -203,14 +221,19 @@ public class ConnectService {
                 //DebugLog.e("buf4[0]="+buf4[0]);
 
                 byte[] buf5 = receive();
-                DebugLog.e("buf5[0]=" + buf5[0]);
-
+                //DebugLog.e("buf5[0]=" + buf5[0]);
+                if (buf5 == null){
+                    onConnectFailEvent();
+                    return;
+                }
                 if(buf5[0] == 81){
-                    byte data4[] ={(byte) 0xB1, 0x00, 0x08, 0x00, 0x01, 0x00, 0x00, 0x00,
+                    byte data4[] ={(byte) 0xB1, 0x00, 0x08, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                            (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff),
                             (byte)0xC8, 0x00, 0x08, 0x00, 0x02, 0x00, 0x00, 0x00 };
                     udpHelper.send(data4);
 
-                    byte data5[] ={0x51, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0x36,
+                    byte data5[] ={0x51, 0x00, 0x14, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                            (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff), 0x36,
                             0x00, 0x0C, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                             0x00, (byte)0xBC, (byte)0x82, (byte)0xF9, 0x54, 0x00, 0x00, 0x00, 0x00 };
                     udpHelper.send(data5);
@@ -219,17 +242,22 @@ public class ConnectService {
                     //DebugLog.e("buf6[0]="+buf6[0]);
 
                     byte[] buf7 = receive();
-                    DebugLog.e("buf7[0]="+buf7[0]);
-
+                    //DebugLog.e("buf7[0]="+buf7[0]);
+                    if (buf7 == null){
+                        onConnectFailEvent();
+                        return;
+                    }
                     if(buf7[0] == 81){
-                        byte data6[] ={(byte) 0xB1, 0x00, 0x08, 0x00, 0x01, 0x00, 0x00, 0x00,
+                        byte data6[] ={(byte) 0xB1, 0x00, 0x08, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                                (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff),
                                 0x36, 0x00, 0x08, 0x00, 0x03, 0x00, 0x00, 0x00 };
                         udpHelper.send(data6);
-                        byte data7[] ={0x51 ,0x00 ,0x14 ,0x00 ,0x01 ,0x00 ,0x00 ,0x00 ,(byte) 0xC8 ,
+                        byte data7[] ={0x51 ,0x00 ,0x14 ,0x00 ,(byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                                (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff) ,(byte) 0xC8 ,
                                 0x00 ,0x0C ,0x00 ,0x08 ,0x00 ,0x00 ,0x00 ,(byte)0xC8 ,0x00 ,0x08 ,
                                 0x00 ,0x01 ,0x00 ,0x00 ,0x00 ,0x02 ,0x03 ,0x01,0x00 };
                         udpHelper.send(data7);
-                        User user = new User("admin", "admin");
+
                         onConnectSuccessEvent(user);
                     }else{
                         onConnectFailEvent();
@@ -247,7 +275,8 @@ public class ConnectService {
 
     public void sendBeat()
     {
-        byte beat[] = {0x21 ,0x07 ,0x00 ,0x00 ,0x01 ,0x00 ,0x00 ,0x00};
+        byte beat[] = {0x21 ,0x07 ,0x00 ,0x00 ,(byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff)};
         udpHelper.send(beat);
     }
 
@@ -274,20 +303,20 @@ public class ConnectService {
 
     private void onConnectFailEvent()
     {
+        setConnect(false);
         if(mConnectListener != null)
         {
             mConnectListener.connectFail();
         }
-        setConnect(false);
     }
 
     private void onConnectSuccessEvent(User user)
     {
+        setConnect(true);
         if(mConnectListener != null)
         {
             mConnectListener.connectSuccess(user);
         }
-        setConnect(true);
     }
 
     private void onDisConnectFailEvent()
