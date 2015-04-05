@@ -8,6 +8,8 @@
         <menu>
             <item android:id="@+id/change_address"
                 android:title="@string/change_address" />
+            <item android:id="@+id/change_user"
+                android:title="@string/change_user" />
             <item android:id="@+id/exit"
                 android:title="@string/exit" />
         </menu>

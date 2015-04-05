@@ -54,7 +54,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        connectToServer();
+        connectToServer(getAppContext().getUser());
         recordHelper = new RecordHelper();
         recordHelper.setRecordListener(this);
         trackHelper = new AudioTrackHelper();
@@ -87,6 +87,9 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
         switch (item.getItemId()) {
             case R.id.change_address:
                 changeAddressEvent();
+                return true;
+            case R.id.change_user:
+                changeUserEvent();
                 return true;
             case R.id.exit:
                 NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
@@ -159,6 +162,18 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
                 getAppContext().getUser().setPassword(arg2);
                 UsetUtil.saveUserToLocal(getAppContext().getUser(), getActivity());
                 fragment.dismiss();
+                NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (ConnectService.getInstance().isConnect()){
+                            DebugLog.e("disconnect");
+                            ConnectService.getInstance().disconnect();
+                        }
+
+                        connectToServer(getAppContext().getUser());
+                    }
+                });
+
             }
 
             @Override
@@ -186,7 +201,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
                         if (ConnectService.getInstance().isConnect())
                             ConnectService.getInstance().disconnect();
                         UdpHelper.getInstance().initNetWork();
-                        connectToServer();
+                        connectToServer(getAppContext().getUser());
                     }
                 });
                 fragment.dismiss();
@@ -249,15 +264,15 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
             @Override
             public void run() {
                 trackHelper.startPlay();
-                while (true)
+                while (ConnectService.getInstance().isConnect())
                 {
-                    DebugLog.d("receiveAudio ing --->");
+                    //DebugLog.d("receiveAudio ing --->");
                     byte [] receive = AudioService.getInstance().receiveAudio(stateDeCoder);
                     if (receive == null)
                         continue;
                     short [] audioBufShort = new short[ 2 * receive.length];
                     Adpcm.adpcmDecoder(receive, audioBufShort, receive.length * 2, stateDeCoder);
-                    DebugLog.d("receive audio length-->" + audioBufShort.length);
+                    //DebugLog.d("receive audio length-->" + audioBufShort.length);
                     track.write(audioBufShort, 0, audioBufShort.length);
                 }
             }
@@ -293,7 +308,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                ToastUtil.show(getActivity(), "无法链接服务器");
+                ToastUtil.show(getActivity(), "非法用户或者是网络不好");
                 if (speaker == null)
                     return;
                 speaker.setEnabled(false);
@@ -333,14 +348,14 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
         });
     }
 
-    private void connectToServer()
+    private void connectToServer(final User user)
     {
         ConnectService.getInstance().setConnectListener(this);
         NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
             @Override
             public void run() {
-                DebugLog.d("connect--->");
-                ConnectService.getInstance().connect();
+                DebugLog.e("connect--->");
+                ConnectService.getInstance().connect(user);
             }
         });
 

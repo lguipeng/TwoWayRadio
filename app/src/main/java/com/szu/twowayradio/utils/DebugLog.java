@@ -112,7 +112,8 @@ public class DebugLog{
         {
             System.out.printf(",0x%x", bytes[i]);
         }
-        System.out.println("--------------------------------");
+        System.out.println();
+        DebugLog.e("length ==" + len);
     }
 
     public static void printBytes(byte[] bytes)

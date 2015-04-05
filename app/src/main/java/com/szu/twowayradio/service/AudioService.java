@@ -5,6 +5,7 @@ import com.szu.twowayradio.network.UdpHelper;
 import com.szu.twowayradio.utils.ByteConvert;
 
 import java.net.DatagramPacket;
+import java.util.Arrays;
 
 /**
  * lgp on 2015/3/14.
@@ -186,12 +187,7 @@ public class AudioService {
         {
             return null;
         }
-
-        byte[] temp = new byte[length - AUDIO_DATA_HEAD_LENGTH];
-        for(int i=0; i<temp.length; i++){
-            temp[i] = buf[i + AUDIO_DATA_HEAD_LENGTH];
-        }
-
+        byte[] temp = Arrays.copyOfRange(buf, AUDIO_DATA_HEAD_LENGTH, length-AUDIO_DATA_HEAD_LENGTH);
         short valprev = ByteConvert.bytesToShort(buf, 76);
         byte index = buf[78];
         if (state != null)

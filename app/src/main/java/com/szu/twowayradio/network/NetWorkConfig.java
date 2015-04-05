@@ -7,5 +7,5 @@ public class NetWorkConfig {
     public  static int DEFAULT_PORT = 3301;
 
     //default timeout is 8s
-    public  static int DEFAULT_TIMEOUT = 8000;
+    public  static int DEFAULT_TIMEOUT = 10000;
 }

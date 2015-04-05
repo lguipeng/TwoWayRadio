@@ -1,5 +1,7 @@
 package com.szu.twowayradio.service;
 
+import android.text.TextUtils;
+
 import com.szu.twowayradio.domains.NmcpHead;
 import com.szu.twowayradio.domains.User;
 import com.szu.twowayradio.network.UdpHelper;
@@ -9,6 +11,7 @@ import com.szu.twowayradio.utils.Logger;
 import com.szu.twowayradio.utils.Md5Convert;
 
 import java.net.DatagramPacket;
+import java.util.Arrays;
 
 /**
  *  lgp on 2014/9/2.
@@ -20,6 +23,8 @@ public class ConnectService {
     private boolean isConnect = false;
     private ConnectListener mConnectListener = null;
     public static int transactionID;
+    private static final int MAX_RETRY_CONNECT_TIME = 3;
+    private  int retryTime = 0;
     public static ConnectService getInstance()
     {
         return connectService;
@@ -30,7 +35,7 @@ public class ConnectService {
     }
 
     //must not run in main threads
-    public void connect(final User user)
+    public void connect1(final User user)
     {
         NmcpHead head = new NmcpHead(NmcpHead.NMCP_SUBP_CONNECT, NmcpHead.CONN_CONNECT, 1);
 
@@ -149,20 +154,33 @@ public class ConnectService {
                 0x00, 0x0C, 0x00, 0x04, 0x00, 0x00, 0x00, (byte)0xC8, 0x00, 0x08, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
         udpHelper.send(data2);
+        try {
+            receive();
+            receive();
+            receive();
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            byte data3[] = {0x21, 0x09, 0x00, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
+                    (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff)};
+            udpHelper.send(data3);
+            onDisConnectSuccessEvent();
+        }
 
-        receive();
-        receive();
-        receive();
-        //DebugLog.e("buf2[0]="+buf2[0]);
-
-        byte data3[] = {0x21, 0x09, 0x00, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
-                (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff)};
-        udpHelper.send(data3);
-        onDisConnectSuccessEvent();
     }
 
-    public void connect()
+    public void connect(User user)
     {
+        if (user == null || TextUtils.isEmpty(user.getName()) || TextUtils.isEmpty(user.getPassword())){
+            onConnectFailEvent();
+            return;
+        }
+
+        if (user.getName().length() > User.USER_NAME_LEN || user.getPassword().length() > User.USER_PASSWORD_LEN){
+            onConnectFailEvent();
+            return;
+        }
+
         if(!udpHelper.isInit())
         {
             if (!udpHelper.initNetWork()){
@@ -176,34 +194,52 @@ public class ConnectService {
 
         byte data0[] = {0x21 ,0x01 ,0x00 ,0x00, 0x01,0x00 ,0x00 ,0x00};
         udpHelper.send(data0);
+        DebugLog.e("send data 0");
         byte[] buf0 = receive();
-        if (buf0 == null){
+        DebugLog.e("receive data 0");
+        if (buf0 == null || buf0.length < 12){
             onConnectFailEvent();
             return;
         }
-        User user = new User("admin", "admin");
+
         user.setTransactionID(ByteConvert.bytesToInt(buf0, 8));
         transactionID = ByteConvert.bytesToInt(buf0, 8);
+        DebugLog.e("transactionID" + transactionID);
         if(buf0[0] == 0x21){
+
             byte data1[] ={0x51, 0x00, 0x30, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
-                    (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff), 0x01, 0x00,
-                    0x28, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x24, 0x00, 0x61,
-                    0x64, 0x6D, 0x69, 0x6E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21, 0x23, 0x2F,
-                    0x29, 0x7A, 0x57, (byte) 0xA5, (byte) 0xA7,0x43, (byte) 0x89, 0x4A,
-                    0x0E, 0x4A, (byte) 0x80, 0x1F, (byte) 0xC3};
+                    (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff),
+                    0x01, 0x00, 0x28, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x24, 0x00,
+//                    0x61, 0x64, 0x6D, 0x69, 0x6E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//
+//                    0x21, 0x23, 0x2F,0x29, 0x7A, 0x57, (byte) 0xA5, (byte) 0xA7,0x43, (byte) 0x89, 0x4A,
+//                    0x0E, 0x4A, (byte) 0x80, 0x1F, (byte) 0xC3
+            };
+
+            byte [] name = user.getName().getBytes();
+            int nameLength = name.length;
+            name = Arrays.copyOf(name, User.USER_NAME_LEN);
+            byte [] password = Md5Convert.md5(user.getPassword());
+            data1 = ByteConvert.combineBytes(68, data1, name, password);
             udpHelper.send(data1);
 
             byte[] buf1 = receive();
+
             //DebugLog.e("buf1[0]=" + buf1[0]);
 
             byte[] buf2 = receive();
-            //DebugLog.e("buf2[0]="+buf2[0]);
             if (buf2 == null){
                 onConnectFailEvent();
                 return;
             }
-            if(buf2[0] == 81){
+            byte[] nameAck = Arrays.copyOfRange(buf2, 24, nameLength + 24);
+            String nameAckString = new String(nameAck);
+            if (!user.getName().equals(nameAckString)){
+                onConnectFailEvent();
+                return;
+            }
+            if(buf2[0] == 0x51){
                 byte data2[] ={(byte) 0xB1, (byte)0x9D, 0x08, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
                         (byte)((transactionID >> 16 & 0x000000ff)), (byte)((transactionID >> 24) & 0x000000ff), 0x01, 0x00, (byte)0x88, 0x00, 0x01, 0x00, 0x00, 0x00};
                 udpHelper.send(data2);
@@ -269,7 +305,9 @@ public class ConnectService {
                 onConnectFailEvent();
             }
         }else{
+            disconnect();
             onConnectFailEvent();
+
         }
     }
 
@@ -298,7 +336,8 @@ public class ConnectService {
         DatagramPacket packet;
         if((packet = udpHelper.receive()) == null)
             return null;
-        return packet.getData();
+        int length = packet.getLength();
+        return Arrays.copyOf(packet.getData(), length);
     }
 
     private void onConnectFailEvent()
