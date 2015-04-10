@@ -118,7 +118,8 @@ public class DebugLog{
 
     public static void printBytes(byte[] bytes)
     {
-       printBytes(bytes, bytes.length);
+        if (bytes != null)
+            printBytes(bytes, bytes.length);
     }
 
     public static void printShorts(short[] shorts, int len)

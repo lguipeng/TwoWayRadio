@@ -139,7 +139,7 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
         {
             speakerLight.setImageDrawable(getActivity().getResources().getDrawable(R.drawable.a3q));
             recordHelper.startRecord();
-            trackHelper.startPlay();
+            trackHelper.stopPlay();
         }
     }
 
@@ -216,13 +216,12 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
 
     @Override
     public void recording(final AudioRecord record) {
-        ToastUtil.show(getActivity(), "recording");
+        ToastUtil.show(getActivity(), "start record");
         //do some network transfer
         NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
             @Override
             public void run() {
-                while(recordHelper.isRecord())
-                {
+                while(recordHelper.isRecord()){
                     final short[] recordBuf = new short[RecordHelper.BufferElements2Rec / 2];
                     final int readSize = record.read(recordBuf, 0, recordBuf.length);
                     //calc1(recordBuf, 0, recordBuf.length);
@@ -254,6 +253,12 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
                         }
                     });
                 }
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ToastUtil.show(getActivity(), "stop record");
+                    }
+                });
             }
         });
     }
@@ -266,14 +271,19 @@ public class MainFragment extends BaseFragment implements RecordHelper.RecordLis
                 trackHelper.startPlay();
                 while (ConnectService.getInstance().isConnect())
                 {
-                    //DebugLog.d("receiveAudio ing --->");
-                    byte [] receive = AudioService.getInstance().receiveAudio(stateDeCoder);
+                    final byte [] receive = AudioService.getInstance().receiveAudio(stateDeCoder);
                     if (receive == null)
                         continue;
-                    short [] audioBufShort = new short[ 2 * receive.length];
-                    Adpcm.adpcmDecoder(receive, audioBufShort, receive.length * 2, stateDeCoder);
-                    //DebugLog.d("receive audio length-->" + audioBufShort.length);
-                    track.write(audioBufShort, 0, audioBufShort.length);
+                    NetWorkService.getDefaultInstance().getPool().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            short[] audioBufShort = new short[2 * receive.length];
+                            Adpcm.adpcmDecoder(receive, audioBufShort, receive.length * 2, stateDeCoder);
+                            DebugLog.d("receive audio length-->" + audioBufShort.length);
+                            track.write(audioBufShort, 0, audioBufShort.length);
+                        }
+                    });
+
                 }
             }
         });

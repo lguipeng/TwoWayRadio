@@ -194,17 +194,16 @@ public class ConnectService {
 
         byte data0[] = {0x21 ,0x01 ,0x00 ,0x00, 0x01,0x00 ,0x00 ,0x00};
         udpHelper.send(data0);
-        DebugLog.e("send data 0");
         byte[] buf0 = receive();
-        DebugLog.e("receive data 0");
+
         if (buf0 == null || buf0.length < 12){
             onConnectFailEvent();
             return;
         }
-
+        DebugLog.printBytes(buf0);
         user.setTransactionID(ByteConvert.bytesToInt(buf0, 8));
         transactionID = ByteConvert.bytesToInt(buf0, 8);
-        DebugLog.e("transactionID" + transactionID);
+
         if(buf0[0] == 0x21){
 
             byte data1[] ={0x51, 0x00, 0x30, 0x00, (byte)(transactionID & 0x000000ff), (byte)((transactionID >> 8) & 0x000000ff),
@@ -218,24 +217,23 @@ public class ConnectService {
             };
 
             byte [] name = user.getName().getBytes();
-            int nameLength = name.length;
             name = Arrays.copyOf(name, User.USER_NAME_LEN);
             byte [] password = Md5Convert.md5(user.getPassword());
             data1 = ByteConvert.combineBytes(68, data1, name, password);
             udpHelper.send(data1);
 
             byte[] buf1 = receive();
-
-            //DebugLog.e("buf1[0]=" + buf1[0]);
+            DebugLog.printBytes(buf1);
 
             byte[] buf2 = receive();
-            if (buf2 == null){
+            if (buf2 == null || buf2.length < 24){
                 onConnectFailEvent();
                 return;
             }
-            byte[] nameAck = Arrays.copyOfRange(buf2, 24, nameLength + 24);
-            String nameAckString = new String(nameAck);
-            if (!user.getName().equals(nameAckString)){
+            DebugLog.printBytes(buf2);
+
+            int ack = ByteConvert.bytesToInt(buf2, 20);
+            if (ack != 0){
                 onConnectFailEvent();
                 return;
             }
